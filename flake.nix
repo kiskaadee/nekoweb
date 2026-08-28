@@ -28,8 +28,7 @@
             # Node.js & package managers for Frontend & Daemon
             nodejs_22
             pnpm
-            nodePackages.npm
-
+            # npm: Program provided by `nodejs_22`
             # Native build tools & DB libraries
             postgresql
             pkg-config
