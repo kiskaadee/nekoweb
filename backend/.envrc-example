@@ -13,7 +13,4 @@ fi
 source .venv/bin/activate
 
 # Application Configuration
-export POSTGRES_USER=postgres
-export POSTGRES_PASSWORD=postgres
-export POSTGRES_DB=nekoweb
-export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
+export DATABASE_URL="sqlite+aiosqlite:///local_dev.db"
