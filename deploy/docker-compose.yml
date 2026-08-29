@@ -1,0 +1,57 @@
+services:
+  nekoweb-backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    container_name: ${CONTAINER_NAME:-nekoweb-backend}
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      - TZ=${TZ:-UTC}
+      - DATABASE_URL=sqlite+aiosqlite:///app/data/nekoweb.db
+      - RPC_URL=ws://nekoweb-daemon:9876
+      - MANGA_STORAGE_PATH=/media/manga
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    volumes:
+      - ./data:/app/data
+      - ${MANGA_STORAGE_PATH:-./storage}:/media/manga
+    restart: unless-stopped
+    networks:
+      - proxy
+      - internal
+    labels:
+      - "traefik.enable=true"
+      # HTTPS Router
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.rule=Host(`${SERVICE_DOMAIN}`)"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.entrypoints=${HTTPS_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.tls=true"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.tls.certresolver=${CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.middlewares=${SERVICE_NAME:-nekoweb}-ratelimit@docker"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}.service=${SERVICE_NAME:-nekoweb}-svc"
+
+      # Rate Limit Middleware
+      - "traefik.http.middlewares.${SERVICE_NAME:-nekoweb}-ratelimit.ratelimit.average=${RATE_LIMIT_AVG:-100}"
+      - "traefik.http.middlewares.${SERVICE_NAME:-nekoweb}-ratelimit.ratelimit.burst=${RATE_LIMIT_BURST:-50}"
+
+      # HTTP to HTTPS Redirect
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}-red.rule=Host(`${SERVICE_DOMAIN}`)"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}-red.entrypoints=${HTTP_ENTRYPOINT:-web}"
+      - "traefik.http.routers.${SERVICE_NAME:-nekoweb}-red.middlewares=https-redirect@docker"
+
+      # Service Port
+      - "traefik.http.services.${SERVICE_NAME:-nekoweb}-svc.loadbalancer.server.port=8000"
+
+  nekoweb-daemon:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.daemon
+    container_name: ${DAEMON_CONTAINER_NAME:-nekoweb-daemon}
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:-proxy-net}
+    external: true
+  internal:
+    name: nekoweb-internal
