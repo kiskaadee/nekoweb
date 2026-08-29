@@ -1,0 +1,19 @@
+# Inherit root level envrc (Nix Flake)
+source_up
+
+# Force uv to use the Nix-provided Python interpreter rather than downloading its own
+export UV_PYTHON_PREFERENCE=system
+
+# Auto-create the virtual environment if it is missing
+if [ ! -d ".venv" ]; then
+    uv venv
+fi
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Application Configuration
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=postgres
+export POSTGRES_DB=nekoweb
+export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"

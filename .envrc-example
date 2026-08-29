@@ -1,0 +1,3 @@
+# Loads the overarching Nix DevShell in NixOS
+use flake
+
